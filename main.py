@@ -88,7 +88,7 @@ class TitanicSurvivalPredictor:
         print(f"Did not survive: {survival_rate[0]} ({survival_rate[0] / len(self.df) * 100:.1f}%)")
 
     def visualize_data(self):
-        """Create visualizations for exploratory data analysis"""
+        """Create beautiful visualizations for exploratory data analysis"""
         print("\n" + "=" * 50)
         print("CREATING VISUALIZATIONS")
         print("=" * 50)
@@ -96,78 +96,194 @@ class TitanicSurvivalPredictor:
         # Create visualizations directory
         os.makedirs('visualizations', exist_ok=True)
 
-        # Set style for better looking plots
-        plt.style.use('seaborn-v0_8')
+        # Set style for professional looking plots
+        plt.style.use('default')
+        sns.set_palette("husl")
 
-        # 1. Survival Rate Bar Chart
-        plt.figure(figsize=(15, 12))
+        # Create figure with multiple subplots - better spacing
+        fig = plt.figure(figsize=(20, 24))
+        fig.suptitle('🚢 Titanic Dataset - Exploratory Data Analysis',
+                     fontsize=24, fontweight='bold', y=0.98)
 
-        plt.subplot(2, 3, 1)
+        # 1. Overall Survival Rate with improved styling
+        ax1 = plt.subplot(4, 3, 1)
         survival_counts = self.df['Survived'].value_counts()
-        bars = plt.bar(['Did not survive', 'Survived'], survival_counts.values,
-                       color=['red', 'green'], alpha=0.7)
-        plt.title('Overall Survival Rate', fontsize=14, fontweight='bold')
-        plt.ylabel('Number of Passengers')
-        for bar in bars:
-            height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width() / 2., height,
-                     f'{int(height)}', ha='center', va='bottom')
+        colors = ['#FF6B6B', '#4ECDC4']  # Modern color palette
+        wedges, texts, autotexts = ax1.pie(survival_counts.values,
+                                          labels=['Did not survive', 'Survived'],
+                                          colors=colors, autopct='%1.1f%%',
+                                          startangle=90, explode=(0.05, 0.05),
+                                          shadow=True)
+        ax1.set_title('Overall Survival Rate', fontsize=16, fontweight='bold', pad=20)
+        # Make percentage text more readable
+        for autotext in autotexts:
+            autotext.set_color('white')
+            autotext.set_fontweight('bold')
+            autotext.set_fontsize(12)
 
-        # 2. Survival by Gender
-        plt.subplot(2, 3, 2)
-        gender_survival = pd.crosstab(self.df['Sex'], self.df['Survived'])
-        gender_survival.plot(kind='bar', color=['red', 'green'], alpha=0.7)
-        plt.title('Survival Rate by Gender', fontsize=14, fontweight='bold')
-        plt.ylabel('Number of Passengers')
-        plt.legend(['Did not survive', 'Survived'])
-        plt.xticks(rotation=0)
+        # 2. Survival by Gender - Horizontal Bar Chart
+        ax2 = plt.subplot(4, 3, 2)
+        gender_survival = self.df.groupby('Sex')['Survived'].agg(['count', 'sum']).reset_index()
+        gender_survival['survival_rate'] = gender_survival['sum'] / gender_survival['count'] * 100
 
-        # 3. Survival by Passenger Class
-        plt.subplot(2, 3, 3)
-        class_survival = pd.crosstab(self.df['Pclass'], self.df['Survived'])
-        class_survival.plot(kind='bar', color=['red', 'green'], alpha=0.7)
-        plt.title('Survival Rate by Passenger Class', fontsize=14, fontweight='bold')
-        plt.ylabel('Number of Passengers')
-        plt.xlabel('Passenger Class')
-        plt.legend(['Did not survive', 'Survived'])
-        plt.xticks(rotation=0)
+        bars = ax2.barh(gender_survival['Sex'], gender_survival['survival_rate'],
+                       color=['#FF9999', '#66B2FF'], alpha=0.8, height=0.6)
+        ax2.set_title('Survival Rate by Gender (%)', fontsize=16, fontweight='bold')
+        ax2.set_xlabel('Survival Percentage')
+        ax2.grid(axis='x', alpha=0.3)
 
-        # 4. Age Distribution
-        plt.subplot(2, 3, 4)
-        plt.hist(self.df[self.df['Survived'] == 1]['Age'].dropna(),
-                 bins=30, alpha=0.7, label='Survived', color='green')
-        plt.hist(self.df[self.df['Survived'] == 0]['Age'].dropna(),
-                 bins=30, alpha=0.7, label='Did not survive', color='red')
-        plt.title('Age Distribution by Survival', fontsize=14, fontweight='bold')
-        plt.xlabel('Age')
-        plt.ylabel('Frequency')
-        plt.legend()
+        # Add percentage labels on bars
+        for i, bar in enumerate(bars):
+            width = bar.get_width()
+            ax2.text(width + 1, bar.get_y() + bar.get_height()/2,
+                    f'{width:.1f}%', ha='left', va='center', fontweight='bold')
 
-        # 5. Fare Distribution
-        plt.subplot(2, 3, 5)
-        plt.hist(self.df[self.df['Survived'] == 1]['Fare'].dropna(),
-                 bins=30, alpha=0.7, label='Survived', color='green')
-        plt.hist(self.df[self.df['Survived'] == 0]['Fare'].dropna(),
-                 bins=30, alpha=0.7, label='Did not survive', color='red')
-        plt.title('Fare Distribution by Survival', fontsize=14, fontweight='bold')
-        plt.xlabel('Fare')
-        plt.ylabel('Frequency')
-        plt.legend()
+        # 3. Survival by Passenger Class - Enhanced
+        ax3 = plt.subplot(4, 3, 3)
+        class_survival = pd.crosstab(self.df['Pclass'], self.df['Survived'], normalize='index') * 100
+        class_survival.plot(kind='bar', ax=ax3, color=['#FF6B6B', '#4ECDC4'],
+                           alpha=0.8, width=0.7)
+        ax3.set_title('Survival Rate by Passenger Class', fontsize=16, fontweight='bold')
+        ax3.set_ylabel('Survival Percentage')
+        ax3.set_xlabel('Passenger Class')
+        ax3.legend(['Did not survive', 'Survived'], loc='upper right')
+        ax3.set_xticklabels(['1st Class', '2nd Class', '3rd Class'], rotation=0)
+        ax3.grid(axis='y', alpha=0.3)
 
-        # 6. Correlation Heatmap
-        plt.subplot(2, 3, 6)
-        # Prepare numerical data for correlation
+        # 4. Age Distribution by Survival - Violin Plot
+        ax4 = plt.subplot(4, 3, 4)
+        age_data = []
+        age_labels = []
+        for survival in [0, 1]:
+            ages = self.df[self.df['Survived'] == survival]['Age'].dropna()
+            age_data.append(ages)
+            age_labels.append('Did not survive' if survival == 0 else 'Survived')
+
+        violin_parts = ax4.violinplot(age_data, positions=[0, 1], showmeans=True, showmedians=True)
+        ax4.set_title('Age Distribution by Survival', fontsize=16, fontweight='bold')
+        ax4.set_ylabel('Age')
+        ax4.set_xticks([0, 1])
+        ax4.set_xticklabels(age_labels)
+        ax4.grid(axis='y', alpha=0.3)
+
+        # Color the violin plots
+        colors = ['#FF6B6B', '#4ECDC4']
+        for pc, color in zip(violin_parts['bodies'], colors):
+            pc.set_facecolor(color)
+            pc.set_alpha(0.7)
+
+        # 5. Fare Distribution - Box Plot
+        ax5 = plt.subplot(4, 3, 5)
+        fare_data = [self.df[self.df['Survived'] == i]['Fare'].dropna() for i in [0, 1]]
+        box_plot = ax5.boxplot(fare_data, labels=['Did not survive', 'Survived'],
+                              patch_artist=True, showfliers=False)
+        ax5.set_title('Fare Distribution by Survival', fontsize=16, fontweight='bold')
+        ax5.set_ylabel('Fare (£)')
+        ax5.grid(axis='y', alpha=0.3)
+
+        # Color the box plots
+        colors = ['#FF6B6B', '#4ECDC4']
+        for patch, color in zip(box_plot['boxes'], colors):
+            patch.set_facecolor(color)
+            patch.set_alpha(0.7)
+
+        # 6. Embarked Port Analysis
+        ax6 = plt.subplot(4, 3, 6)
+        embark_survival = pd.crosstab(self.df['Embarked'], self.df['Survived'], normalize='index') * 100
+        embark_survival.plot(kind='bar', ax=ax6, color=['#FF6B6B', '#4ECDC4'], alpha=0.8)
+        ax6.set_title('Survival Rate by Embarked Port', fontsize=16, fontweight='bold')
+        ax6.set_ylabel('Survival Percentage')
+        ax6.set_xlabel('Embarked Port')
+        ax6.legend(['Did not survive', 'Survived'])
+        ax6.set_xticklabels(['Cherbourg', 'Queenstown', 'Southampton'], rotation=45)
+        ax6.grid(axis='y', alpha=0.3)
+
+        # 7. Family Size Impact
+        ax7 = plt.subplot(4, 3, 7)
+        family_size = self.df['SibSp'] + self.df['Parch'] + 1
+        family_survival = pd.crosstab(family_size, self.df['Survived'], normalize='index') * 100
+        family_survival[1].plot(kind='line', ax=ax7, marker='o', linewidth=3,
+                               markersize=8, color='#4ECDC4')
+        ax7.set_title('Survival Rate by Family Size', fontsize=16, fontweight='bold')
+        ax7.set_ylabel('Survival Percentage')
+        ax7.set_xlabel('Family Size')
+        ax7.grid(True, alpha=0.3)
+        ax7.set_ylim(0, 100)
+
+        # 8. Age Groups Analysis
+        ax8 = plt.subplot(4, 3, 8)
+        age_groups = pd.cut(self.df['Age'], bins=[0, 12, 18, 30, 50, 80],
+                           labels=['Child', 'Teen', 'Young Adult', 'Adult', 'Senior'])
+        age_group_survival = pd.crosstab(age_groups, self.df['Survived'], normalize='index') * 100
+        age_group_survival[1].plot(kind='bar', ax=ax8, color='#4ECDC4', alpha=0.8)
+        ax8.set_title('Survival Rate by Age Group', fontsize=16, fontweight='bold')
+        ax8.set_ylabel('Survival Percentage')
+        ax8.set_xlabel('Age Group')
+        ax8.set_xticklabels(ax8.get_xticklabels(), rotation=45)
+        ax8.grid(axis='y', alpha=0.3)
+
+        # 9. Correlation Heatmap - Enhanced
+        ax9 = plt.subplot(4, 3, 9)
         numeric_df = self.df.select_dtypes(include=[np.number])
         correlation_matrix = numeric_df.corr()
-        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0,
-                    square=True, linewidths=0.5)
-        plt.title('Feature Correlation Heatmap', fontsize=14, fontweight='bold')
+        mask = np.triu(np.ones_like(correlation_matrix, dtype=bool))  # Show only lower triangle
+        sns.heatmap(correlation_matrix, mask=mask, annot=True, cmap='RdYlBu_r', center=0,
+                    square=True, linewidths=0.5, ax=ax9, fmt='.2f')
+        ax9.set_title('Feature Correlation Matrix', fontsize=16, fontweight='bold')
 
-        plt.tight_layout()
-        plt.savefig('visualizations/exploratory_analysis.png', dpi=300, bbox_inches='tight')
-        #plt.show()
+        # 10. Survival by Gender and Class
+        ax10 = plt.subplot(4, 3, 10)
+        gender_class = pd.crosstab([self.df['Sex'], self.df['Pclass']],
+                                   self.df['Survived'], normalize='index') * 100
+        gender_class[1].plot(kind='bar', ax=ax10, color='#4ECDC4', alpha=0.8)
+        ax10.set_title('Survival Rate by Gender & Class', fontsize=16, fontweight='bold')
+        ax10.set_ylabel('Survival Percentage')
+        ax10.set_xlabel('Gender & Class')
+        ax10.set_xticklabels([f'{gender}\nClass {pclass}' for gender, pclass in gender_class.index],
+                            rotation=45, ha='right')
+        ax10.grid(axis='y', alpha=0.3)
 
-        print("✅ Visualizations saved to 'visualizations/exploratory_analysis.png'")
+        # 11. Missing Data Analysis
+        ax11 = plt.subplot(4, 3, 11)
+        missing_data = self.df.isnull().sum()
+        missing_data = missing_data[missing_data > 0].sort_values(ascending=True)
+        if len(missing_data) > 0:
+            bars = ax11.barh(range(len(missing_data)), missing_data.values,
+                            color='#FF6B6B', alpha=0.8)
+            ax11.set_yticks(range(len(missing_data)))
+            ax11.set_yticklabels(missing_data.index)
+            ax11.set_title('Missing Values by Feature', fontsize=16, fontweight='bold')
+            ax11.set_xlabel('Number of Missing Values')
+            ax11.grid(axis='x', alpha=0.3)
+
+            # Add value labels
+            for i, bar in enumerate(bars):
+                width = bar.get_width()
+                ax11.text(width + 5, bar.get_y() + bar.get_height()/2,
+                         f'{int(width)}', ha='left', va='center', fontweight='bold')
+
+        # 12. Fare vs Age Scatter Plot
+        ax12 = plt.subplot(4, 3, 12)
+        survived = self.df[self.df['Survived'] == 1]
+        not_survived = self.df[self.df['Survived'] == 0]
+
+        ax12.scatter(not_survived['Age'], not_survived['Fare'],
+                    alpha=0.6, c='#FF6B6B', label='Did not survive', s=30)
+        ax12.scatter(survived['Age'], survived['Fare'],
+                    alpha=0.6, c='#4ECDC4', label='Survived', s=30)
+        ax12.set_title('Fare vs Age by Survival', fontsize=16, fontweight='bold')
+        ax12.set_xlabel('Age')
+        ax12.set_ylabel('Fare (£)')
+        ax12.legend()
+        ax12.grid(True, alpha=0.3)
+
+        # Adjust layout to prevent overlapping
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+        plt.savefig('visualizations/exploratory_analysis.png', dpi=300, bbox_inches='tight',
+                   facecolor='white', edgecolor='none')
+        plt.close()  # Close the figure to free memory
+
+        print("✅ Enhanced visualizations saved to 'visualizations/exploratory_analysis.png'")
 
     def clean_and_preprocess_data(self):
         """Clean missing data and preprocess features"""
@@ -307,14 +423,14 @@ class TitanicSurvivalPredictor:
         # Confusion Matrix
         cm = confusion_matrix(self.y_test, y_test_pred)
 
-        plt.figure(figsize=(12, 5))
+        plt.figure(figsize=(15, 6))
 
         # Plot confusion matrix
         plt.subplot(1, 2, 1)
         sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                     xticklabels=['Did not survive', 'Survived'],
                     yticklabels=['Did not survive', 'Survived'])
-        plt.title('Confusion Matrix', fontsize=14, fontweight='bold')
+        plt.title('Confusion Matrix', fontsize=16, fontweight='bold')
         plt.xlabel('Predicted')
         plt.ylabel('Actual')
 
@@ -327,12 +443,12 @@ class TitanicSurvivalPredictor:
 
         plt.barh(range(len(feature_importance)), feature_importance['importance'])
         plt.yticks(range(len(feature_importance)), feature_importance['feature'])
-        plt.title('Feature Importance (Absolute Coefficients)', fontsize=14, fontweight='bold')
+        plt.title('Feature Importance (Absolute Coefficients)', fontsize=16, fontweight='bold')
         plt.xlabel('Absolute Coefficient Value')
 
         plt.tight_layout()
         plt.savefig('visualizations/model_evaluation.png', dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close()
 
         print("✅ Model evaluation plots saved to 'visualizations/model_evaluation.png'")
 
@@ -344,7 +460,7 @@ class TitanicSurvivalPredictor:
         print("FEATURE ANALYSIS")
         print("=" * 50)
 
-        plt.figure(figsize=(15, 10))
+        plt.figure(figsize=(18, 12))
 
         # 1. Feature Importance Bar Chart
         plt.subplot(2, 2, 1)
@@ -355,7 +471,7 @@ class TitanicSurvivalPredictor:
 
         bars = plt.bar(range(len(feature_importance)), feature_importance['importance'],
                        color='skyblue', alpha=0.8)
-        plt.title('Feature Importance Rankings', fontsize=14, fontweight='bold')
+        plt.title('Feature Importance Rankings', fontsize=16, fontweight='bold')
         plt.xlabel('Features')
         plt.ylabel('Absolute Coefficient Value')
         plt.xticks(range(len(feature_importance)), feature_importance['feature'], rotation=45)
@@ -364,16 +480,15 @@ class TitanicSurvivalPredictor:
         for i, bar in enumerate(bars):
             height = bar.get_height()
             plt.text(bar.get_x() + bar.get_width() / 2., height,
-                     f'{height:.3f}', ha='center', va='bottom', fontsize=8)
+                     f'{height:.3f}', ha='center', va='bottom', fontsize=10)
 
         # 2. Survival Rate by Top Features
         plt.subplot(2, 2, 2)
-        top_features = feature_importance.head(3)['feature'].tolist()
         if 'Sex_encoded' in self.X.columns:
             survival_by_sex = self.df_processed.groupby('Sex')['Survived'].mean()
             bars = plt.bar(survival_by_sex.index, survival_by_sex.values,
                            color=['lightcoral', 'lightgreen'], alpha=0.8)
-            plt.title('Survival Rate by Gender', fontsize=14, fontweight='bold')
+            plt.title('Survival Rate by Gender', fontsize=16, fontweight='bold')
             plt.ylabel('Survival Rate')
             for bar in bars:
                 height = bar.get_height()
@@ -391,7 +506,7 @@ class TitanicSurvivalPredictor:
 
         colors = ['red' if x < 0 else 'green' for x in correlations]
         bars = plt.bar(numerical_features, correlations, color=colors, alpha=0.7)
-        plt.title('Feature Correlation with Survival', fontsize=14, fontweight='bold')
+        plt.title('Feature Correlation with Survival', fontsize=16, fontweight='bold')
         plt.ylabel('Correlation Coefficient')
         plt.xticks(rotation=45)
         plt.axhline(y=0, color='black', linestyle='-', alpha=0.3)
@@ -411,13 +526,13 @@ class TitanicSurvivalPredictor:
         colors = ['red' if x < 0 else 'green' for x in coefficients['coefficient']]
         plt.barh(range(len(coefficients)), coefficients['coefficient'], color=colors, alpha=0.7)
         plt.yticks(range(len(coefficients)), coefficients['feature'])
-        plt.title('Logistic Regression Coefficients', fontsize=14, fontweight='bold')
+        plt.title('Logistic Regression Coefficients', fontsize=16, fontweight='bold')
         plt.xlabel('Coefficient Value')
         plt.axvline(x=0, color='black', linestyle='-', alpha=0.3)
 
         plt.tight_layout()
         plt.savefig('visualizations/feature_analysis.png', dpi=300, bbox_inches='tight')
-        plt.show()
+        plt.close()
 
         print("✅ Feature analysis plots saved to 'visualizations/feature_analysis.png'")
 
