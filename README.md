@@ -31,13 +31,7 @@ TitanicPrediction/
 │   ├── exploratory_analysis.png    # EDA visualizations
 │   ├── model_evaluation.png        # Model performance plots
 │   └── feature_analysis.png        # Feature importance charts
-├── src/
-│   ├── __init__.py
-│   ├── data_preprocessing.py
-│   ├── eda.py
-│   └── model.py
-├── main.py                         # Main execution script
-├               
+├── main.py                         # Main execution script              
 └── README.md                       # Project documentation
 ```
 
@@ -52,7 +46,7 @@ TitanicPrediction/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/TitanicPrediction.git
+   git clone https://github.com/2200090049/TitanicPrediction
    cd TitanicPrediction
    ```
 
@@ -123,10 +117,7 @@ The project creates three main visualization files:
 
 
 
-## 📧 Contact
 
-Your Name - your.email@example.com
-Project Link: https://github.com/yourusername/TitanicPrediction
 
 ## 🙏 Acknowledgments
 
