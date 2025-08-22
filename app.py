@@ -7,7 +7,7 @@ import streamlit as st
 import sys
 import os
 import subprocess
-import matplotlib.pyplot as plt
+
 from io import StringIO
 import contextlib
 
